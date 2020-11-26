@@ -37,6 +37,11 @@ class BoltS3OpsClient:
                 'errorMessage': e.response['Error']['Message'],
                 'errorCode': e.response['Error']['Code']
             }
+        except Exception as e:
+            return {
+                'errorMessage': str(e),
+                'errorCode': str(1)
+            }
 
     def __list_objects_v2(self, bucket):
         resp = self.__s3_client.list_objects_v2(Bucket=bucket)
