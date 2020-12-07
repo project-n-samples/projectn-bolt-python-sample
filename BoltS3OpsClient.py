@@ -45,6 +45,10 @@ class BoltS3OpsClient:
                 return self._list_buckets()
             elif request_type == "HEAD_BUCKET":
                 return self._head_bucket(event['bucket'])
+            elif request_type == "PUT_OBJECT":
+                return self._put_object(event['bucket'], event['key'], event['value'])
+            elif request_type == "DELETE_OBJECT":
+                return self._delete_object(event['bucket'], event['key'])
         except ClientError as e:
             return {
                 'errorMessage': e.response['Error']['Message'],
@@ -116,4 +120,32 @@ class BoltS3OpsClient:
         return {
             'statusCode': status_code,
             'region': headers.get('x-amz-bucket-region')
+        }
+
+    def _put_object(self, bucket, key, value):
+        """
+        Uploads an object to Bolt/S3.
+        :param bucket: bucket name
+        :param key: key name
+        :param value: object data
+        :return: object metadata
+        """
+        resp = self._s3_client.put_object(Bucket=bucket, Key=key, Body=str(value).encode())
+        return {
+            'ETag': resp.get('ETag'),
+            'Expiration': resp.get('Expiration'),
+            'VersionId': resp.get('VersionId')
+        }
+
+    def _delete_object(self, bucket, key):
+        """
+        Delete an object from Bolt/S3
+        :param bucket: bucket name
+        :param key: key name
+        :return: status code
+        """
+        resp = self._s3_client.delete_object(Bucket=bucket, Key=key)
+        status_code = resp['ResponseMetadata']['HTTPStatusCode']
+        return {
+            'statusCode': status_code
         }
