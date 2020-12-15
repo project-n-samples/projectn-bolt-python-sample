@@ -9,7 +9,7 @@ Sample AWS Lambda Applications in Python that utilizes [Python SDK for Bolt](htt
 
 ### Build From Source
 
-* Clone the Python SDK for Bolt repository and navigate inside it
+* Clone the `Python SDK for Bolt` repository and navigate inside it
 
 ```bash
 git clone https://gitlab.com/projectn-oss/projectn-bolt-python.git
@@ -23,7 +23,7 @@ cd projectn-bolt-python
 python3 -m pip install --upgrade setuptools wheel
 ```
 
-* Now run this command from the root of the Python SDK for Bolt repository:
+* Now run this command from the root of the `Python SDK for Bolt` repository:
 
 ```bash
 python3 setup.py sdist bdist_wheel
@@ -38,17 +38,18 @@ dist/
   example_pkg_YOUR_USERNAME_HERE-0.0.1.tar.gz
 ```
 
-* Run this command (from the root of the repository) to install the boto3 sdk into a directory.
- At this point all your code dependencies (for the python sdk, and boto3 + botocore) should have been installed.
-
-```bash
-pip install --target ./python-sdk-lambda ./dist/bolt_python_sdk-1.0.0-py3-none-any.whl
-```
-
-* Now clone the sample repository into the `python-sdk-lambda` directory.
+* Clone the sample repository into the `python-sdk-lambda` directory.
 
 ```bash
 git clone https://gitlab.com/projectn-oss/projectn-bolt-python-sample.git python-sdk-lambda
+```
+
+* Run this command (from the root of the `Python SDK for Bolt` repository) to install the boto3 sdk into the
+  `python-sdk-lambda` directory. At this point all your code dependencies (for the python sdk, and boto3 + botocore)
+  should have been installed.
+
+```bash
+pip install --target ./python-sdk-lambda ./dist/bolt_python_sdk-1.0.0-py3-none-any.whl
 ```
 
 * create deployment package
