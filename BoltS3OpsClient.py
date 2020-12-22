@@ -1,3 +1,5 @@
+import gzip
+
 import boto3
 import bolt as bolt3
 from botocore.exceptions import ClientError
@@ -73,12 +75,17 @@ class BoltS3OpsClient:
     def _get_object(self, bucket, key):
         """
         Gets the object from Bolt/S3, computes and returns the object's MD5 hash
+        If the object is gzip encoded, object is decompressed before computing its MD5.
         :param bucket: bucket name
         :param key: key name
         :return: md5 hash of the object
         """
         resp = self._s3_client.get_object(Bucket=bucket, Key=key)
-        md5 = hashlib.md5(resp['Body'].read()).hexdigest().upper()
+        # If Object is gzip encoded, compute MD5 on the decompressed object.
+        if ('ContentEncoding' in resp and resp['ContentEncoding'] == 'gzip') or str(key).endswith('.gz'):
+            md5 = hashlib.md5(gzip.decompress(resp['Body'].read())).hexdigest().upper()
+        else:
+            md5 = hashlib.md5(resp['Body'].read()).hexdigest().upper()
         return {'md5': md5}
 
     def _head_object(self, bucket, key):
