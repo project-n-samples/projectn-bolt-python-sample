@@ -1,4 +1,5 @@
 from BoltS3OpsClient import BoltS3OpsClient
+from BoltS3Perf import BoltS3Perf
 
 
 def lambda_handler(event, context):
@@ -51,3 +52,8 @@ def lambda_handler(event, context):
     """
     bolts3_ops_client = BoltS3OpsClient()
     return bolts3_ops_client.process_event(event)
+
+
+def perf_lambda_handler(event, context):
+    bolts3_perf = BoltS3Perf()
+    return bolts3_perf.process_event(event)
