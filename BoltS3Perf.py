@@ -5,6 +5,7 @@ import random
 import string
 import time
 from statistics import mean
+from statistics import median_low
 
 
 class BoltS3Perf:
@@ -64,11 +65,24 @@ class BoltS3Perf:
             bolt_put_obj_times.append(put_obj_end_time - put_obj_start_time)
 
         s3_put_obj_avg_time = mean(s3_put_obj_times)
+        s3_put_obj_p50 = median_low(s3_put_obj_times)
+        s3_put_obj_times.sort()
+        p90_index = int(len(s3_put_obj_times) * 0.9)
+        s3_put_obj_p90 = s3_put_obj_times[p90_index]
+
         bolt_put_obj_avg_time = mean(bolt_put_obj_times)
+        bolt_put_obj_p50 = median_low(bolt_put_obj_times)
+        bolt_put_obj_times.sort()
+        p90_index = int(len(bolt_put_obj_times) * 0.9)
+        bolt_put_obj_p90 = bolt_put_obj_times[p90_index]
 
         return {
             's3_put_obj_time': "{:.2f} secs".format(s3_put_obj_avg_time),
-            'bolt_put_obj_time': "{:.2f} secs".format(bolt_put_obj_avg_time)
+            's3_put_obj_p50': "{:.2f} secs".format(s3_put_obj_p50),
+            's3_put_obj_p90': "{:.2f} secs".format(s3_put_obj_p90),
+            'bolt_put_obj_time': "{:.2f} secs".format(bolt_put_obj_avg_time),
+            'bolt_put_obj_p50': "{:.2f} secs".format(bolt_put_obj_p50),
+            'bolt_put_obj_p90': "{:.2f} secs".format(bolt_put_obj_p90)
         }
 
     def _generate(self, characters=string.ascii_lowercase, length=10):
@@ -91,11 +105,24 @@ class BoltS3Perf:
             bolt_get_obj_times.append(get_obj_end_time - get_obj_start_time)
 
         s3_get_obj_avg_time = mean(s3_get_obj_times)
+        s3_get_obj_p50 = median_low(s3_get_obj_times)
+        s3_get_obj_times.sort()
+        p90_index = int(len(s3_get_obj_times) * 0.9)
+        s3_get_obj_p90 = s3_get_obj_times[p90_index]
+
         bolt_get_obj_avg_time = mean(bolt_get_obj_times)
+        bolt_get_obj_p50 = median_low(bolt_get_obj_times)
+        bolt_get_obj_times.sort()
+        p90_index = int(len(bolt_get_obj_times) * 0.9)
+        bolt_get_obj_p90 = bolt_get_obj_times[p90_index]
 
         return {
             's3_get_obj_time': "{:.2f} secs".format(s3_get_obj_avg_time),
-            'bolt_get_obj_time': "{:.2f} secs".format(bolt_get_obj_avg_time)
+            's3_get_obj_p50': "{:.2f} secs".format(s3_get_obj_p50),
+            's3_get_obj_p90': "{:.2f} secs".format(s3_get_obj_p90),
+            'bolt_get_obj_time': "{:.2f} secs".format(bolt_get_obj_avg_time),
+            'bolt_get_obj_p50': "{:.2f} secs".format(bolt_get_obj_p50),
+            'bolt_get_obj_p90': "{:.2f} secs".format(bolt_get_obj_p90)
         }
 
     def _delete_object_perf(self, bucket, keys):
@@ -115,11 +142,24 @@ class BoltS3Perf:
             bolt_del_obj_times.append(del_obj_end_time - del_obj_start_time)
 
         s3_del_obj_avg_time = mean(s3_del_obj_times)
+        s3_del_obj_p50 = median_low(s3_del_obj_times)
+        s3_del_obj_times.sort()
+        p90_index = int(len(s3_del_obj_times) * 0.9)
+        s3_del_obj_p90 = s3_del_obj_times[p90_index]
+
         bolt_del_obj_avg_time = mean(bolt_del_obj_times)
+        bolt_del_obj_p50 = median_low(bolt_del_obj_times)
+        bolt_del_obj_times.sort()
+        p90_index = int(len(bolt_del_obj_times) * 0.9)
+        bolt_del_obj_p90 = bolt_del_obj_times[p90_index]
 
         return {
             's3_del_obj_time': "{:.2f} secs".format(s3_del_obj_avg_time),
-            'bolt_del_obj_time': "{:.2f} secs".format(bolt_del_obj_avg_time)
+            's3_del_obj_p50': "{:.2f} secs".format(s3_del_obj_p50),
+            's3_del_obj_p90': "{:.2f} secs".format(s3_del_obj_p90),
+            'bolt_del_obj_time': "{:.2f} secs".format(bolt_del_obj_avg_time),
+            'bolt_del_obj_p50': "{:.2f} secs".format(bolt_del_obj_p50),
+            'bolt_del_obj_p90': "{:.2f} secs".format(bolt_del_obj_p90)
         }
 
     def _list_objects_v2_perf(self, bucket):
@@ -145,11 +185,24 @@ class BoltS3Perf:
             bolt_list_objects_v2_times.append(list_objects_v2_end_time - list_objects_v2_start_time)
 
         s3_list_objects_v2_avg_time = mean(s3_list_objects_v2_times)
+        s3_list_objects_v2_p50 = median_low(s3_list_objects_v2_times)
+        s3_list_objects_v2_times.sort()
+        p90_index = int(len(s3_list_objects_v2_times) * 0.9)
+        s3_list_objects_v2_p90 = s3_list_objects_v2_times[p90_index]
+
         bolt_list_objects_v2_avg_time = mean(bolt_list_objects_v2_times)
+        bolt_list_objects_v2_p50 = median_low(bolt_list_objects_v2_times)
+        bolt_list_objects_v2_times.sort()
+        p90_index = int(len(bolt_list_objects_v2_times) * 0.9)
+        bolt_list_objects_v2_p90 = bolt_list_objects_v2_times[p90_index]
 
         return {
             's3_list_objects_v2_time': "{:.2f} secs".format(s3_list_objects_v2_avg_time),
-            'bolt_list_objects_v2_time': "{:.2f} secs".format(bolt_list_objects_v2_avg_time)
+            's3_list_objects_v2_p50': "{:.2f} secs".format(s3_list_objects_v2_p50),
+            's3_list_objects_v2_p90': "{:.2f} secs".format(s3_list_objects_v2_p90),
+            'bolt_list_objects_v2_time': "{:.2f} secs".format(bolt_list_objects_v2_avg_time),
+            'bolt_list_objects_v2_p50': "{:.2f} secs".format(bolt_list_objects_v2_p50),
+            'bolt_list_objects_v2_p90': "{:.2f} secs".format(bolt_list_objects_v2_p90)
         }
 
     def _all_perf(self, bucket, keys):
