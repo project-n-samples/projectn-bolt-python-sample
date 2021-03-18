@@ -48,11 +48,11 @@ class BoltS3Perf:
             self.OBJ_LENGTH = int(event['objLength'])
 
         # if keys not passed as in input:
-        # if GET_OBJECT, list objects to get key names
+        # if GET_OBJECT or GET_OBJECT_PASSTHROUGH, list objects to get key names
         # otherwise generate key names.
         if 'keys' in event:
             self._keys = event['keys']
-        elif request_type == "GET_OBJECT":
+        elif request_type == "GET_OBJECT" or request_type == "GET_OBJECT_PASSTHROUGH":
             self._keys = self._list_objects_v2(event['bucket'])
         else:
             self._keys = self._generate_key_names(self.NUM_KEYS)
@@ -63,6 +63,8 @@ class BoltS3Perf:
                 return self._put_object_perf(event['bucket'])
             elif request_type == "GET_OBJECT":
                 return self._get_object_perf(event['bucket'])
+            elif request_type == "GET_OBJECT_PASSTHROUGH":
+                return self._get_object_passthrough_perf(event['bucket'])
             elif request_type == "DELETE_OBJECT":
                 return self._delete_object_perf(event['bucket'])
             elif request_type == "LIST_OBJECTS_V2":
@@ -117,6 +119,7 @@ class BoltS3Perf:
         bolt_put_obj_perf_stats = self._compute_perf_stats(bolt_put_obj_times)
 
         return {
+            'object_size': "{:d} bytes".format(self.OBJ_LENGTH),
             's3_put_obj_perf_stats': s3_put_obj_perf_stats,
             'bolt_put_obj_perf_stats': bolt_put_obj_perf_stats
         }
@@ -128,36 +131,122 @@ class BoltS3Perf:
         :return: Get Object performance statistics
         """
 
+        # list of latencies.
         s3_get_obj_times = []
         bolt_get_obj_times = []
+
+        # list of object sizes.
+        s3_obj_sizes = []
+        bolt_obj_sizes = []
+
+        # object counts (compressed, uncompressed).
+        s3_cmp_obj_count = 0
+        s3_uncmp_obj_count = 0
+        bolt_cmp_obj_count = 0
+        bolt_uncmp_obj_count = 0
 
         # Get Objects from S3.
         for key in self._keys:
             get_obj_start_time = time.time()
-            self._s3_client.get_object(Bucket=bucket, Key=key)
+            s3_resp = self._s3_client.get_object(Bucket=bucket, Key=key)
+            # read the contents of the body.
+            # s3_resp['Body'].read()
+            for chunk in s3_resp['Body'].iter_chunks():
+                pass
             get_obj_end_time = time.time()
             # calc latency
             get_obj_time = get_obj_end_time - get_obj_start_time
             s3_get_obj_times.append(get_obj_time)
+            # count object
+            if ('ContentEncoding' in s3_resp and s3_resp['ContentEncoding'] == 'gzip') or str(key).endswith('.gz'):
+                s3_cmp_obj_count += 1
+            else:
+                s3_uncmp_obj_count += 1
+            # get object size.
+            if 'ContentLength' in s3_resp:
+                s3_obj_sizes.append(s3_resp['ContentLength'])
 
         # Get Objects from Bolt.
         for key in self._keys:
             get_obj_start_time = time.time()
-            self._bolts3_client.get_object(Bucket=bucket, Key=key)
+            bolt_resp = self._bolts3_client.get_object(Bucket=bucket, Key=key)
+            # read the contents of the body.
+            # bolt_resp['Body'].read()
+            for chunk in bolt_resp['Body'].iter_chunks():
+                pass
             get_obj_end_time = time.time()
             # calc latency
             get_obj_time = get_obj_end_time - get_obj_start_time
             bolt_get_obj_times.append(get_obj_time)
+            # count object
+            if ('ContentEncoding' in bolt_resp and bolt_resp['ContentEncoding'] == 'gzip') or str(key).endswith('.gz'):
+                bolt_cmp_obj_count += 1
+            else:
+                bolt_uncmp_obj_count += 1
+            # get object size.
+            if 'ContentLength' in bolt_resp:
+                bolt_obj_sizes.append(bolt_resp['ContentLength'])
 
         # calc s3 perf stats
-        s3_get_obj_perf_stats = self._compute_perf_stats(s3_get_obj_times)
+        s3_get_obj_perf_stats = self._compute_perf_stats(s3_get_obj_times, obj_sizes=s3_obj_sizes)
 
         # calc bolt perf stats
-        bolt_get_obj_perf_stats = self._compute_perf_stats(bolt_get_obj_times)
+        bolt_get_obj_perf_stats = self._compute_perf_stats(bolt_get_obj_times, obj_sizes=bolt_obj_sizes)
 
         return {
             's3_get_obj_perf_stats': s3_get_obj_perf_stats,
-            'bolt_get_obj_perf_stats': bolt_get_obj_perf_stats
+            's3_object_count (compressed)': s3_cmp_obj_count,
+            's3_object_count (uncompressed)': s3_uncmp_obj_count,
+            'bolt_get_obj_perf_stats': bolt_get_obj_perf_stats,
+            'bolt_object_count (compressed)': bolt_cmp_obj_count,
+            'bolt_object_count (uncompressed)': bolt_uncmp_obj_count
+        }
+
+    def _get_object_passthrough_perf(self, bucket):
+        """
+        Measures the Get Object passthrough performance (latency, throughput) of Bolt / S3.
+        :param bucket: name of unmonitored bucket
+        :return: Get Object passthrough performance statistics
+        """
+
+        # list of latencies
+        bolt_get_obj_times = []
+
+        # list of object sizes
+        bolt_obj_sizes = []
+
+        # object counts (compressed, uncompressed).
+        bolt_cmp_obj_count = 0
+        bolt_uncmp_obj_count = 0
+
+        # Get Objects via passthrough from Bolt.
+        for key in self._keys:
+            get_obj_start_time = time.time()
+            bolt_resp = self._bolts3_client.get_object(Bucket=bucket, Key=key)
+            # read the contents of the body.
+            # bolt_resp['Body'].read()
+            for chunk in bolt_resp['Body'].iter_chunks():
+                pass
+            get_obj_end_time = time.time()
+            # calc latency
+            get_obj_time = get_obj_end_time - get_obj_start_time
+            bolt_get_obj_times.append(get_obj_time)
+            # count object
+            if ('ContentEncoding' in bolt_resp and bolt_resp['ContentEncoding'] == 'gzip') or str(key).endswith('.gz'):
+                bolt_cmp_obj_count += 1
+            else:
+                bolt_uncmp_obj_count += 1
+            # get object size.
+            if 'ContentLength' in bolt_resp:
+                bolt_obj_sizes.append(bolt_resp['ContentLength'])
+
+        # calc bolt perf stats
+        bolt_get_obj_pt_perf_stats = self._compute_perf_stats(bolt_get_obj_times, obj_sizes=bolt_obj_sizes)
+
+        return {
+            'bolt_get_obj_passthrough_perf_stats': bolt_get_obj_pt_perf_stats,
+            'bolt_object_count (compressed)': bolt_cmp_obj_count,
+            'bolt_object_count (uncompressed)': bolt_uncmp_obj_count
         }
 
     def _delete_object_perf(self, bucket):
@@ -283,12 +372,13 @@ class BoltS3Perf:
             merged_perf_stats.update(perf_stat)
         return merged_perf_stats
 
-    def _compute_perf_stats(self, op_times, op_tp=None):
+    def _compute_perf_stats(self, op_times, op_tp=None, obj_sizes=None):
         """
         Compute performance statistics
         :param op_times: list of latencies
         :param op_tp: list of throughputs
-        :return: performance statistics (latency, throughput)
+        :param obj_sizes: list of object sizes
+        :return: performance statistics (latency, throughput, object size)
         """
         # calc op latency perf.
         op_avg_time = mean(op_times)
@@ -313,7 +403,20 @@ class BoltS3Perf:
             tp = len(op_times) / math.fsum(op_times)
             tp_perf_stats = "{:.2f} objects/sec".format(tp)
 
-        return {
+        # calc obj size metrics.
+        if obj_sizes:
+            obj_avg_size = mean(obj_sizes)
+            obj_sizes_p50 = median_low(obj_sizes)
+            obj_sizes.sort()
+            p90_index = int(len(obj_sizes) * 0.9)
+            obj_sizes_p90 = obj_sizes[p90_index]
+            obj_sizes_perf_stats = {
+                'average': "{:.2f} bytes".format(obj_avg_size),
+                'p50': "{:.2f} bytes".format(obj_sizes_p50),
+                'p90': "{:.2f} bytes".format(obj_sizes_p90)
+            }
+
+        perf_stats = {
             'latency': {
                 'average': "{:.2f} secs".format(op_avg_time),
                 'p50': "{:.2f} secs".format(op_time_p50),
@@ -321,6 +424,10 @@ class BoltS3Perf:
             },
             'throughput': tp_perf_stats
         }
+        if obj_sizes:
+            perf_stats['object_size'] = obj_sizes_perf_stats
+
+        return perf_stats
 
     def _generate_key_names(self, num_objects):
         """

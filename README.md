@@ -168,6 +168,7 @@ aws lambda create-function \
   * requestType - type of request / operation to be performed. The following requests are supported:
     * list_objects_v2 - list objects
     * get_object - get object
+    * get_object_passthrough - get object (via passthrough) of unmonitored bucket
     * put_object - upload object
     * delete_object - delete object
     * all - put, get, delete, list objects (default request if none specified)
@@ -182,6 +183,10 @@ aws lambda create-function \
     * Measure Get object performance of Bolt / S3.
       ```json
       {"requestType": "get_object", "bucket": "<bucket>"}
+      ```
+    * Measure Get object passthrough performance of Bolt.
+      ```json
+      {"requestType": "get_object_passthrough", "bucket": "<unmonitored-bucket>"}
       ```
     * Measure Put object performance of Bolt / S3.
       ```json
