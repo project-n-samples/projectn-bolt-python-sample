@@ -155,3 +155,49 @@ aws lambda create-function \
     ```json
     {"bucket": "<bucket>", "key": "<key>"}
     ```
+    
+#### BoltS3PerfHandler
+
+* BoltS3PerfHandler is a handler function that is invoked by AWS Lambda to process an incoming event
+  for Bolt/S3 Performance testing. Before running this function, ensure that a source bucket has been crunched by
+  `Bolt` with cleaner turned `OFF`. To use this handler, change the handler of the Lambda function to 
+  `BoltS3PerfHandler.lambda_handler`
+  
+
+* BoltS3PerfHandler accepts the following input parameters as part of the event:
+  * requestType - type of request / operation to be performed. The following requests are supported:
+    * list_objects_v2 - list objects
+    * get_object - get object
+    * get_object_passthrough - get object (via passthrough) of unmonitored bucket
+    * put_object - upload object
+    * delete_object - delete object
+    * all - put, get, delete, list objects (default request if none specified)
+      
+  * bucket - bucket name
+    
+* Following are examples of events, for various requests, that can be used to invoke the handler.
+    * Measure List objects performance of Bolt / S3.
+      ```json
+      {"requestType": "list_objects_v2", "bucket": "<bucket>"}
+      ```
+    * Measure Get object performance of Bolt / S3.
+      ```json
+      {"requestType": "get_object", "bucket": "<bucket>"}
+      ```
+    * Measure Get object passthrough performance of Bolt.
+      ```json
+      {"requestType": "get_object_passthrough", "bucket": "<unmonitored-bucket>"}
+      ```
+    * Measure Put object performance of Bolt / S3.
+      ```json
+      {"requestType": "put_object", "bucket": "<bucket>"}
+      ```
+    * Measure Delete object performance of Bolt / S3.
+      ```json
+      {"requestType": "delete_object", "bucket": "<bucket>"}
+      ```
+    * Measure Put, Delete, Get, List objects performance of Bolt / S3.
+      ```json
+      {"requestType": "all", "bucket": "<bucket>"}
+      ```
+      
