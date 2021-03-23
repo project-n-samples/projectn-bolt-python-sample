@@ -26,6 +26,7 @@ class BoltS3Perf:
         self._s3_client = boto3.client('s3')
         self._bolts3_client = bolt3.client('s3')
         self._keys = None
+        self._request_type = None
 
     def process_event(self, event):
         """
@@ -37,39 +38,42 @@ class BoltS3Perf:
 
         # if requestType is not passed, perform all perf tests.
         if 'requestType' in event:
-            request_type = str(event['requestType']).upper()
+            self._request_type = str(event['requestType']).upper()
         else:
-            request_type = 'ALL'
+            self._request_type = 'ALL'
 
         # update max. no of keys and object data length, if passed in input.
         if 'numKeys' in event:
             self.NUM_KEYS = int(event['numKeys'])
+            if self.NUM_KEYS > 1000:
+                self.NUM_KEYS = 1000
         if 'objLength' in event:
             self.OBJ_LENGTH = int(event['objLength'])
 
         # if keys not passed as in input:
-        # if GET_OBJECT or GET_OBJECT_PASSTHROUGH, list objects to get key names
+        # if GET_OBJECT or GET_OBJECT_PASSTHROUGH, list objects (up to NUM_KEYS) to get key names
         # otherwise generate key names.
         if 'keys' in event:
             self._keys = event['keys']
-        elif request_type == "GET_OBJECT" or request_type == "GET_OBJECT_PASSTHROUGH":
+        elif self._request_type == "GET_OBJECT" or self._request_type == "GET_OBJECT_PASSTHROUGH" or\
+                self._request_type == "GET_OBJECT_TTFB" or self._request_type == "GET_OBJECT_PASSTHROUGH_TTFB":
             self._keys = self._list_objects_v2(event['bucket'])
         else:
             self._keys = self._generate_key_names(self.NUM_KEYS)
 
         # Perform Perf tests based on input 'requestType'
         try:
-            if request_type == "PUT_OBJECT":
+            if self._request_type == "PUT_OBJECT":
                 return self._put_object_perf(event['bucket'])
-            elif request_type == "GET_OBJECT":
+            elif self._request_type == "GET_OBJECT" or self._request_type == "GET_OBJECT_TTFB":
                 return self._get_object_perf(event['bucket'])
-            elif request_type == "GET_OBJECT_PASSTHROUGH":
+            elif self._request_type == "GET_OBJECT_PASSTHROUGH" or self._request_type == "GET_OBJECT_PASSTHROUGH_TTFB":
                 return self._get_object_passthrough_perf(event['bucket'])
-            elif request_type == "DELETE_OBJECT":
+            elif self._request_type == "DELETE_OBJECT":
                 return self._delete_object_perf(event['bucket'])
-            elif request_type == "LIST_OBJECTS_V2":
+            elif self._request_type == "LIST_OBJECTS_V2":
                 return self._list_objects_v2_perf(event['bucket'])
-            elif request_type == "ALL":
+            elif self._request_type == "ALL":
                 return self._all_perf(event['bucket'])
         except ClientError as e:
             return {
@@ -149,10 +153,15 @@ class BoltS3Perf:
         for key in self._keys:
             get_obj_start_time = time.time()
             s3_resp = self._s3_client.get_object(Bucket=bucket, Key=key)
-            # read the contents of the body.
-            # s3_resp['Body'].read()
-            for chunk in s3_resp['Body'].iter_chunks():
-                pass
+            # If getting first byte object latency, read at most 1 byte
+            # otherwise read the entire body.
+            if self._request_type == "GET_OBJECT_TTFB":
+                # read only first byte from StreamingBody.
+                s3_resp['Body'].read(amt=1)
+            else:
+                # read all the data from StreamingBody.
+                for chunk in s3_resp['Body'].iter_chunks():
+                    pass
             get_obj_end_time = time.time()
             # calc latency
             get_obj_time = get_obj_end_time - get_obj_start_time
@@ -170,10 +179,15 @@ class BoltS3Perf:
         for key in self._keys:
             get_obj_start_time = time.time()
             bolt_resp = self._bolts3_client.get_object(Bucket=bucket, Key=key)
-            # read the contents of the body.
-            # bolt_resp['Body'].read()
-            for chunk in bolt_resp['Body'].iter_chunks():
-                pass
+            # If getting first byte object latency, read at most 1 byte
+            # otherwise read the entire body.
+            if self._request_type == "GET_OBJECT_TTFB":
+                # read only first byte from StreamingBody.
+                bolt_resp['Body'].read(amt=1)
+            else:
+                # read all the data from StreamingBody.
+                for chunk in bolt_resp['Body'].iter_chunks():
+                    pass
             get_obj_end_time = time.time()
             # calc latency
             get_obj_time = get_obj_end_time - get_obj_start_time
@@ -193,11 +207,19 @@ class BoltS3Perf:
         # calc bolt perf stats
         bolt_get_obj_perf_stats = self._compute_perf_stats(bolt_get_obj_times, obj_sizes=bolt_obj_sizes)
 
+        # assign perf stats name.
+        if self._request_type == "GET_OBJECT_TTFB":
+            s3_get_obj_stat_name = 's3_get_obj_ttfb_perf_stats'
+            bolt_get_obj_stat_name = 'bolt_get_obj_ttfb_perf_stats'
+        else:
+            s3_get_obj_stat_name = 's3_get_obj_perf_stats'
+            bolt_get_obj_stat_name = 'bolt_get_obj_perf_stats'
+
         return {
-            's3_get_obj_perf_stats': s3_get_obj_perf_stats,
+            s3_get_obj_stat_name: s3_get_obj_perf_stats,
             's3_object_count (compressed)': s3_cmp_obj_count,
             's3_object_count (uncompressed)': s3_uncmp_obj_count,
-            'bolt_get_obj_perf_stats': bolt_get_obj_perf_stats,
+            bolt_get_obj_stat_name: bolt_get_obj_perf_stats,
             'bolt_object_count (compressed)': bolt_cmp_obj_count,
             'bolt_object_count (uncompressed)': bolt_uncmp_obj_count
         }
@@ -223,10 +245,15 @@ class BoltS3Perf:
         for key in self._keys:
             get_obj_start_time = time.time()
             bolt_resp = self._bolts3_client.get_object(Bucket=bucket, Key=key)
-            # read the contents of the body.
-            # bolt_resp['Body'].read()
-            for chunk in bolt_resp['Body'].iter_chunks():
-                pass
+            # If getting first byte object latency, read at most 1 byte
+            # otherwise read the entire body.
+            if self._request_type == "GET_OBJECT_PASSTHROUGH_TTFB":
+                # read only first byte from StreamingBody.
+                bolt_resp['Body'].read(amt=1)
+            else:
+                # read all the data from StreamingBody.
+                for chunk in bolt_resp['Body'].iter_chunks():
+                    pass
             get_obj_end_time = time.time()
             # calc latency
             get_obj_time = get_obj_end_time - get_obj_start_time
@@ -243,8 +270,14 @@ class BoltS3Perf:
         # calc bolt perf stats
         bolt_get_obj_pt_perf_stats = self._compute_perf_stats(bolt_get_obj_times, obj_sizes=bolt_obj_sizes)
 
+        # assign perf stats name.
+        if self._request_type == "GET_OBJECT_PASSTHROUGH_TTFB":
+            bolt_get_obj_pt_stat_name = 'bolt_get_obj_pt_ttfb_perf_stats'
+        else:
+            bolt_get_obj_pt_stat_name = 'bolt_get_obj_pt_perf_stats'
+
         return {
-            'bolt_get_obj_passthrough_perf_stats': bolt_get_obj_pt_perf_stats,
+            bolt_get_obj_pt_stat_name: bolt_get_obj_pt_perf_stats,
             'bolt_object_count (compressed)': bolt_cmp_obj_count,
             'bolt_object_count (uncompressed)': bolt_uncmp_obj_count
         }
@@ -456,6 +489,6 @@ class BoltS3Perf:
         :param bucket: bucket name
         :return: list of first 1000 objects
         """
-        resp = self._s3_client.list_objects_v2(Bucket=bucket)
+        resp = self._s3_client.list_objects_v2(Bucket=bucket, MaxKeys=self.NUM_KEYS)
         objects = [item['Key'] for item in resp['Contents']]
         return objects
