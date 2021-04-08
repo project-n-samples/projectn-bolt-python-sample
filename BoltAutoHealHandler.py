@@ -3,12 +3,26 @@ import time
 
 
 def lambda_handler(event, context):
+    """
+    lambda_handler is the handler function that is invoked by AWS Lambda to process an incoming event for
+    performing auto-heal tests.
+
+    lambda_handler accepts the following input parameters as part of the event:
+    1) bucket - bucket name
+    2) key - key name
+
+    :param event: incoming event data
+    :param context: runtime information
+    :return: time taken to auto-heal
+    """
     bucket = event['bucket']
     key = event['key']
 
     # Bolt Client.
     bolts3_client = bolt3.client('s3')
 
+    # Attempt to retrieve object repeatedly until it succeeds, which would indicate successful
+    # auto-healing of the object.
     auto_heal_start_time = time.time()
     while True:
         try:
