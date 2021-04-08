@@ -148,6 +148,7 @@ aws lambda create-function \
   
   * key - key name
 
+
 * Following is an example of an event that can be used to invoke the handler.
   * Retrieve object(its MD5 hash) from Bolt and S3:
     
@@ -177,6 +178,7 @@ aws lambda create-function \
       
   * bucket - bucket name
     
+
 * Following are examples of events, for various requests, that can be used to invoke the handler.
     * Measure List objects performance of Bolt / S3.
       ```json
@@ -211,3 +213,25 @@ aws lambda create-function \
       {"requestType": "all", "bucket": "<bucket>"}
       ```
       
+#### BoltAutoHealHandler
+
+* BoltAutoHealHandler is a handler function that is invoked by AWS Lambda to process an incoming event
+  for performing Auto-Heal testing. Before running this handler, modify `data-cruncher` to use 
+  `standard` tier-class and set `backupduration` and `recoveryscannerperiod` to `1 minute` to ensure that the
+  auto-healing duration is within the lambda execution timeout interval. Crunch a sample bucket having a single object.
+  Then delete the single fragment object from the `n-data` bucket. Now run this handler, passing the name of the
+  crunched bucket along with the single object as input parameters to the handler. To use this handler,
+  change the handler of the Lambda function to `BoltAutoHealHandler.lambda_handler`.
+  
+
+* BoltAutoHealHandler accepts the following input parameters as part of the event:
+  * bucket - bucket name
+  
+  * key - key name
+    
+
+* Following is an example of an event that can be used to invoke the handler.
+    * Measure Auto-Heal time of an object in Bolt.
+      ```json
+      {"bucket": "<bucket>", "key": "<key>"}
+      ```

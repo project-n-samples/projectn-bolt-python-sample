@@ -464,7 +464,7 @@ class BoltS3Perf:
 
     def _generate_key_names(self, num_objects):
         """
-        Generate Object names to be used in PUT/GET Object operations.
+        Generate Object names to be used in PUT/DELETE Object operations.
         :param num_objects: number of objects
         :return: list of object names
         """
