@@ -1,6 +1,6 @@
 # AWS Lambda Function in Python for Bolt
 
-Sample AWS Lambda Applications in Python that utilizes [Python SDK for Bolt](https://gitlab.com/projectn-oss/projectn-bolt-python)
+Sample AWS Lambda Function in Python that utilizes [Python SDK for Bolt](https://gitlab.com/projectn-oss/projectn-bolt-python)
 
 ### Requirements
 
@@ -78,10 +78,19 @@ aws lambda create-function \
 
 ### Usage
 
-* The AWS Lambda function can be tested from the AWS Management Console by creating a test event and specifying its
-  inputs in JSON format.
-  
-#### BoltS3OpsHandler
+The Sample AWS Lambda Function in .NET illustrates the usage and various operations, via separate handlers,
+that can be performed using [.NET SDK for Bolt](https://gitlab.com/projectn-oss/bolt-sdk-net).
+The deployed AWS lambda function can be tested from the AWS Management Console by creating a test event and
+specifying its inputs in JSON format.
+
+Please ensure that `Bolt` is deployed before testing the sample AWS lambda function. If you haven't deployed `Bolt`,
+follow the instructions given [here](https://xyz.projectn.co/installation-guide#estimate-savings) to deploy `Bolt`.
+
+#### Testing Bolt or S3 Operations
+
+`BoltS3OpsHandler` is the handler that enables the user to perform Bolt or S3 operations.
+It sends a Bucket or Object request to Bolt or S3 and returns an appropriate response based on the parameters
+passed in as input.
 
 * BoltS3OpsHandler is the handler that is invoked by AWS Lambda to process an incoming event.
 
@@ -136,7 +145,12 @@ aws lambda create-function \
       ```
       
 
-#### BoltS3ValidateObjHandler
+#### Data Validation Tests
+
+`BoltS3ValidateObjHandler` is the handler that enables the user to perform data validation tests. It retrieves
+the object from Bolt and S3 (Bucket Cleaning is disabled), computes and returns their corresponding MD5 hash.
+If the object is gzip encoded, object is decompressed before computing its MD5.
+
 
 * BoltS3ValidateObjHandler is a handler that is invoked by AWS Lambda to process an incoming event for performing 
   data validation tests. To use this handler, change the handler of the Lambda function to 
@@ -157,11 +171,16 @@ aws lambda create-function \
     {"bucket": "<bucket>", "key": "<key>"}
     ```
     
-#### BoltS3PerfHandler
+#### Performance Tests
+
+`BoltS3PerfHandler` is the handler that enables the user to run Bolt or S3 Performance tests. It measures the 
+performance of Bolt or S3 Operations and returns statistics based on the operation. Before using this
+handler, ensure that a source bucket has been crunched by `Bolt` with cleaner turned `OFF`. `Get, List Objects` tests
+are run using the first 1000 objects in the bucket and `Put Object` tests are run using objects of size `100 bytes`.
+`Delete Object` tests are run on objects that were created by the `Put Object` test.
 
 * BoltS3PerfHandler is a handler function that is invoked by AWS Lambda to process an incoming event
-  for Bolt/S3 Performance testing. Before running this function, ensure that a source bucket has been crunched by
-  `Bolt` with cleaner turned `OFF`. To use this handler, change the handler of the Lambda function to 
+  for Bolt/S3 Performance testing. To use this handler, change the handler of the Lambda function to 
   `BoltS3PerfHandler.lambda_handler`
   
 
@@ -213,17 +232,20 @@ aws lambda create-function \
       {"requestType": "all", "bucket": "<bucket>"}
       ```
       
-#### BoltAutoHealHandler
+#### Auto Heal Tests
+
+`BoltAutoHealHandler` is the handler that enables the user to run auto heal tests. Before running this handler,
+modify `data-cruncher` to use `standard` tier-class and set `backupduration` and `recoveryscannerperiod` to `1 minute`
+to ensure that the auto-healing duration is within the lambda execution timeout interval. Crunch a sample bucket having
+a single object. Then delete the single fragment object from the `n-data`bucket. Now run this handler, passing the name
+of the crunched bucket along with the single object as input parameters to the handler. The handler attempts to
+retrieve object repeatedly until it succeeds, which would indicate successful auto-healing of the object and returns
+the time taken to do so.
 
 * BoltAutoHealHandler is a handler function that is invoked by AWS Lambda to process an incoming event
-  for performing Auto-Heal testing. Before running this handler, modify `data-cruncher` to use 
-  `standard` tier-class and set `backupduration` and `recoveryscannerperiod` to `1 minute` to ensure that the
-  auto-healing duration is within the lambda execution timeout interval. Crunch a sample bucket having a single object.
-  Then delete the single fragment object from the `n-data` bucket. Now run this handler, passing the name of the
-  crunched bucket along with the single object as input parameters to the handler. To use this handler,
-  change the handler of the Lambda function to `BoltAutoHealHandler.lambda_handler`.
+  for performing Auto-Heal testing.  To use this handler, change the handler of the Lambda function to
+  `BoltAutoHealHandler.lambda_handler`.
   
-
 * BoltAutoHealHandler accepts the following input parameters as part of the event:
   * bucket - bucket name
   
@@ -235,3 +257,8 @@ aws lambda create-function \
       ```json
       {"bucket": "<bucket>", "key": "<key>"}
       ```
+
+### Getting Help
+
+For additional assistance, please refer to [Project N Docs](https://xyz.projectn.co/) or contact us directly
+[here](mailto:support@projectn.co)
