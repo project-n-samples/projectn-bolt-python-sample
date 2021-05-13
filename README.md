@@ -78,8 +78,8 @@ aws lambda create-function \
 
 ### Usage
 
-The Sample AWS Lambda Function in .NET illustrates the usage and various operations, via separate handlers,
-that can be performed using [.NET SDK for Bolt](https://gitlab.com/projectn-oss/bolt-sdk-net).
+The Sample AWS Lambda Function in Python illustrates the usage and various operations, via separate handlers,
+that can be performed using [Python SDK for Bolt](https://gitlab.com/projectn-oss/projectn-bolt-python).
 The deployed AWS lambda function can be tested from the AWS Management Console by creating a test event and
 specifying its inputs in JSON format.
 
