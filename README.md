@@ -49,7 +49,7 @@ git clone https://gitlab.com/projectn-oss/projectn-bolt-python-sample.git python
   should have been installed.
 
 ```bash
-pip install --target ./python-sdk-lambda ./dist/bolt_python_sdk-1.0.0-py3-none-any.whl
+pip install --target ./python-sdk-lambda ./dist/bolt_sdk-1.0.1-py3-none-any.whl
 ```
 
 * create deployment package
