@@ -34,8 +34,8 @@ python3 setup.py sdist bdist_wheel
 
 ```bash
 dist/
-  example_pkg_YOUR_USERNAME_HERE-0.0.1-py3-none-any.whl
-  example_pkg_YOUR_USERNAME_HERE-0.0.1.tar.gz
+  bolt_sdk-1.0.1-py3-none-any.whl
+  bolt-sdk-1.0.1.tar.gz
 ```
 
 * Clone the sample repository into the `python-sdk-lambda` directory.
